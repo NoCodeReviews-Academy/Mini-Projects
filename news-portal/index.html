@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIGNAL — Nachrichten ohne Filter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Archivo+Black&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Noise Overlay -->
+    <div class="noise"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header__logo">
+            <span class="logo-text">SIGNAL</span>
+            <span class="logo-dot"></span>
+        </div>
+        <nav class="header__nav">
+            <a href="#" class="nav-link active">HEUTE</a>
+            <a href="#" class="nav-link">POLITIK</a>
+            <a href="#" class="nav-link">KULTUR</a>
+            <a href="#" class="nav-link">TECH</a>
+            <a href="#" class="nav-link">MEINUNG</a>
+        </nav>
+        <div class="header__time">
+            <span class="time-label">LIVE</span>
+            <span class="time-value" id="current-time">--:--:--</span>
+        </div>
+    </header>
+
+    <!-- Breaking News Ticker -->
+    <div class="ticker">
+        <div class="ticker__label">BREAKING</div>
+        <div class="ticker__content">
+            <div class="ticker__track">
+                <span>+++ BUNDESTAG BESCHLIESST HISTORISCHES KLIMAPAKET +++ TECHNOLOGIE-RIESEN UNTER DRUCK +++ PROTESTE IN 47 STÄDTEN +++ WIRTSCHAFTSDATEN ÜBERRASCHEN ANALYSTEN +++ KULTURHAUPTSTADT 2025 VERKÜNDET +++ SPORTSKANDAL ERSCHÜTTERT VERBAND +++</span>
+                <span>+++ BUNDESTAG BESCHLIESST HISTORISCHES KLIMAPAKET +++ TECHNOLOGIE-RIESEN UNTER DRUCK +++ PROTESTE IN 47 STÄDTEN +++ WIRTSCHAFTSDATEN ÜBERRASCHEN ANALYSTEN +++ KULTURHAUPTSTADT 2025 VERKÜNDET +++ SPORTSKANDAL ERSCHÜTTERT VERBAND +++</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Hero Section -->
+        <section class="hero">
+            <article class="hero__main">
+                <div class="hero__category">
+                    <span class="category-tag category-tag--red">POLITIK</span>
+                    <span class="hero__number">01</span>
+                </div>
+                <h1 class="hero__title">
+                    DIE ZUKUNFT<br>
+                    <span class="hero__title--outline">WIRD JETZT</span><br>
+                    ENTSCHIEDEN
+                </h1>
+                <p class="hero__excerpt">
+                    Nach 72 Stunden Verhandlung: Das Parlament verabschiedet ein Gesetzespaket,
+                    das die nächsten Jahrzehnte prägen wird. Ein historischer Moment — oder der
+                    Beginn einer neuen Krise?
+                </p>
+                <div class="hero__meta">
+                    <span class="meta-author">VON MARIA SCHMIDT</span>
+                    <span class="meta-divider">/</span>
+                    <span class="meta-time">VOR 23 MIN</span>
+                    <span class="meta-divider">/</span>
+                    <span class="meta-read">8 MIN LESEZEIT</span>
+                </div>
+                <a href="#" class="hero__cta">
+                    <span>VOLLSTÄNDIGER BERICHT</span>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="3"/>
+                    </svg>
+                </a>
+            </article>
+
+            <aside class="hero__sidebar">
+                <div class="sidebar-card sidebar-card--featured">
+                    <span class="sidebar-card__number">02</span>
+                    <span class="category-tag category-tag--yellow">WIRTSCHAFT</span>
+                    <h3 class="sidebar-card__title">MÄRKTE IM FREIEN FALL — ODER NUR KORREKTUR?</h3>
+                    <span class="sidebar-card__time">VOR 1 STD</span>
+                </div>
+                <div class="sidebar-card">
+                    <span class="sidebar-card__number">03</span>
+                    <span class="category-tag category-tag--blue">TECH</span>
+                    <h3 class="sidebar-card__title">KI-GESETZ: WAS SICH JETZT ÄNDERT</h3>
+                    <span class="sidebar-card__time">VOR 2 STD</span>
+                </div>
+                <div class="sidebar-card">
+                    <span class="sidebar-card__number">04</span>
+                    <span class="category-tag category-tag--green">KLIMA</span>
+                    <h3 class="sidebar-card__title">REKORDHITZE: SOMMER DER EXTREME</h3>
+                    <span class="sidebar-card__time">VOR 3 STD</span>
+                </div>
+            </aside>
+        </section>
+
+        <!-- Section Divider -->
+        <div class="divider">
+            <span class="divider__text">MEHR GESCHICHTEN</span>
+            <span class="divider__line"></span>
+        </div>
+
+        <!-- News Grid -->
+        <section class="news-grid">
+            <!-- Large Feature -->
+            <article class="news-card news-card--large">
+                <div class="news-card__image">
+                    <div class="news-card__image-placeholder">
+                        <span class="placeholder-text">KULTUR</span>
+                    </div>
+                </div>
+                <div class="news-card__content">
+                    <span class="category-tag category-tag--purple">KULTUR</span>
+                    <h2 class="news-card__title">DIE KUNST DER REBELLION — EINE NEUE GENERATION BRICHT MIT ALLEM</h2>
+                    <p class="news-card__excerpt">Junge Künstler erobern die Institutionen und stellen unbequeme Fragen. Ein Besuch in den Studios der Unbeugsamen.</p>
+                    <div class="news-card__footer">
+                        <span>THOMAS WEBER</span>
+                        <span>12 MIN</span>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Medium Cards Row -->
+            <article class="news-card news-card--medium">
+                <div class="news-card__stripe news-card__stripe--red"></div>
+                <span class="category-tag category-tag--red">SPORT</span>
+                <h3 class="news-card__title">SKANDAL ERSCHÜTTERT DEN VERBAND</h3>
+                <p class="news-card__excerpt">Interne Dokumente enthüllen systematisches Versagen.</p>
+                <div class="news-card__footer">
+                    <span>J. MÜLLER</span>
+                    <span>5 MIN</span>
+                </div>
+            </article>
+
+            <article class="news-card news-card--medium">
+                <div class="news-card__stripe news-card__stripe--yellow"></div>
+                <span class="category-tag category-tag--yellow">INTERNATIONAL</span>
+                <h3 class="news-card__title">GIPFEL-TREFFEN: WAS WIRKLICH BESPROCHEN WURDE</h3>
+                <p class="news-card__excerpt">Hinter verschlossenen Türen fallen die wichtigen Entscheidungen.</p>
+                <div class="news-card__footer">
+                    <span>A. CHEN</span>
+                    <span>7 MIN</span>
+                </div>
+            </article>
+
+            <article class="news-card news-card--medium">
+                <div class="news-card__stripe news-card__stripe--blue"></div>
+                <span class="category-tag category-tag--blue">WISSENSCHAFT</span>
+                <h3 class="news-card__title">DURCHBRUCH IN DER MEDIZIN: NEUE HOFFNUNG</h3>
+                <p class="news-card__excerpt">Forscher melden Erfolg bei der Behandlung seltener Krankheiten.</p>
+                <div class="news-card__footer">
+                    <span>DR. K. BERG</span>
+                    <span>6 MIN</span>
+                </div>
+            </article>
+
+            <!-- Opinion Section -->
+            <div class="opinion-block">
+                <div class="opinion-block__header">
+                    <span class="opinion-block__label">MEINUNG</span>
+                    <span class="opinion-block__icon">✦</span>
+                </div>
+                <blockquote class="opinion-block__quote">
+                    "Wir stehen an einem Scheideweg. Die Entscheidungen von heute werden die Welt von morgen formen — ob wir wollen oder nicht."
+                </blockquote>
+                <cite class="opinion-block__author">— PROF. DR. ELENA VOGT, POLITIKWISSENSCHAFT</cite>
+                <a href="#" class="opinion-block__link">KOLUMNE LESEN →</a>
+            </div>
+
+            <!-- Small Cards -->
+            <article class="news-card news-card--small">
+                <span class="news-card__number">05</span>
+                <div>
+                    <span class="category-tag category-tag--green">UMWELT</span>
+                    <h4 class="news-card__title">NATURSCHUTZ: NEUES RESERVAT ENTSTEHT</h4>
+                </div>
+            </article>
+
+            <article class="news-card news-card--small">
+                <span class="news-card__number">06</span>
+                <div>
+                    <span class="category-tag category-tag--purple">GESELLSCHAFT</span>
+                    <h4 class="news-card__title">STUDIE ZEIGT: SO LEBEN WIR 2030</h4>
+                </div>
+            </article>
+
+            <article class="news-card news-card--small">
+                <span class="news-card__number">07</span>
+                <div>
+                    <span class="category-tag category-tag--yellow">FINANZEN</span>
+                    <h4 class="news-card__title">ZENTRALBANK SENDET WARNSIGNALE</h4>
+                </div>
+            </article>
+
+            <article class="news-card news-card--small">
+                <span class="news-card__number">08</span>
+                <div>
+                    <span class="category-tag category-tag--blue">MOBILITÄT</span>
+                    <h4 class="news-card__title">VERKEHRSWENDE: WO ES HAKT</h4>
+                </div>
+            </article>
+        </section>
+
+        <!-- Feature Banner -->
+        <section class="feature-banner">
+            <div class="feature-banner__bg">
+                <span class="bg-text">DEEP</span>
+                <span class="bg-text">DIVE</span>
+            </div>
+            <div class="feature-banner__content">
+                <span class="feature-banner__label">SPEZIAL-REPORT</span>
+                <h2 class="feature-banner__title">DIE VERBORGENE MACHT DER ALGORITHMEN</h2>
+                <p class="feature-banner__text">Eine 6-teilige Investigativ-Serie über die unsichtbaren Kräfte, die unsere Gesellschaft formen.</p>
+                <a href="#" class="feature-banner__cta">SERIE STARTEN</a>
+            </div>
+            <div class="feature-banner__parts">
+                <span class="part part--active">01</span>
+                <span class="part">02</span>
+                <span class="part">03</span>
+                <span class="part">04</span>
+                <span class="part">05</span>
+                <span class="part">06</span>
+            </div>
+        </section>
+
+        <!-- Bottom Grid -->
+        <section class="bottom-section">
+            <div class="bottom-section__header">
+                <h2 class="bottom-section__title">LETZTE MELDUNGEN</h2>
+                <span class="bottom-section__live">● LIVE</span>
+            </div>
+
+            <div class="timeline">
+                <div class="timeline__item">
+                    <span class="timeline__time">14:32</span>
+                    <span class="timeline__dot"></span>
+                    <p class="timeline__text">Regierungssprecher bestätigt Verhandlungsfortschritte</p>
+                </div>
+                <div class="timeline__item">
+                    <span class="timeline__time">14:18</span>
+                    <span class="timeline__dot"></span>
+                    <p class="timeline__text">Börse Frankfurt: DAX erholt sich nach frühen Verlusten</p>
+                </div>
+                <div class="timeline__item">
+                    <span class="timeline__time">13:55</span>
+                    <span class="timeline__dot"></span>
+                    <p class="timeline__text">Wetterdienst warnt vor Starkregen im Süden</p>
+                </div>
+                <div class="timeline__item">
+                    <span class="timeline__time">13:42</span>
+                    <span class="timeline__dot"></span>
+                    <p class="timeline__text">Tech-Konzern kündigt Stellenabbau an</p>
+                </div>
+                <div class="timeline__item">
+                    <span class="timeline__time">13:28</span>
+                    <span class="timeline__dot"></span>
+                    <p class="timeline__text">Kulturminister eröffnet neue Ausstellung</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer__top">
+            <div class="footer__logo">SIGNAL</div>
+            <div class="footer__tagline">NACHRICHTEN<br>OHNE FILTER</div>
+        </div>
+        <div class="footer__nav">
+            <div class="footer__col">
+                <span class="footer__label">RUBRIKEN</span>
+                <a href="#">Politik</a>
+                <a href="#">Wirtschaft</a>
+                <a href="#">Kultur</a>
+                <a href="#">Sport</a>
+            </div>
+            <div class="footer__col">
+                <span class="footer__label">SERVICE</span>
+                <a href="#">Newsletter</a>
+                <a href="#">Podcasts</a>
+                <a href="#">Archive</a>
+                <a href="#">RSS</a>
+            </div>
+            <div class="footer__col">
+                <span class="footer__label">LEGAL</span>
+                <a href="#">Impressum</a>
+                <a href="#">Datenschutz</a>
+                <a href="#">AGB</a>
+            </div>
+            <div class="footer__col">
+                <span class="footer__label">KONTAKT</span>
+                <a href="#">Redaktion</a>
+                <a href="#">Werbung</a>
+                <a href="#">Karriere</a>
+            </div>
+        </div>
+        <div class="footer__bottom">
+            <span>© 2025 SIGNAL MEDIA</span>
+            <span>UNABHÄNGIG · UNBESTECHLICH · UNERMÜDLICH</span>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

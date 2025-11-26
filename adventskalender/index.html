@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe Coding Adventskalender 2025</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="snowflakes" aria-hidden="true"></div>
+
+    <div class="stars" aria-hidden="true"></div>
+
+    <header class="header">
+        <div class="header-glow"></div>
+        <p class="pre-title">No Code Reviews Community presents</p>
+        <h1 class="title">
+            <span class="title-line">Vibe Coding</span>
+            <span class="title-main">Adventskalender</span>
+            <span class="title-year">2025</span>
+        </h1>
+        <p class="subtitle">24 Micro-Apps in 24 Tagen</p>
+        <div class="header-decoration">
+            <span class="ornament">&#10052;</span>
+            <span class="ornament">&#10053;</span>
+            <span class="ornament">&#10052;</span>
+        </div>
+        <a href="https://nocodereviews.com/" target="_blank" rel="noopener" class="cta-button">
+            <span class="cta-icon">🚀</span>
+            <span>Kostenfrei der Community beitreten</span>
+        </a>
+    </header>
+
+    <main class="calendar-container">
+        <div class="calendar-grid" id="calendarGrid">
+            <!-- Türchen werden via JavaScript generiert -->
+        </div>
+    </main>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal" id="modal">
+            <button class="modal-close" id="modalClose" aria-label="Schließen">&times;</button>
+            <div class="modal-header">
+                <span class="modal-day" id="modalDay"></span>
+                <h2 class="modal-title" id="modalTitle"></h2>
+            </div>
+            <div class="modal-content">
+                <div class="modal-section">
+                    <h3>Aufgabe</h3>
+                    <p id="modalTask"></p>
+                </div>
+                <div class="modal-section">
+                    <h3>Prompt</h3>
+                    <div class="prompt-box">
+                        <pre id="modalPrompt"></pre>
+                        <button class="copy-btn" id="copyBtn" title="Prompt kopieren">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            <span>Kopieren</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-section">
+                    <h3>Anleitung</h3>
+                    <p id="modalInstructions"></p>
+                </div>
+                <div class="modal-section">
+                    <h3>Skill</h3>
+                    <div class="skill-badge" id="modalSkill"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="difficulty" id="modalDifficulty"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>Made with <span class="heart">&#10084;</span> by the No Code Reviews Community</p>
+        <p class="footer-sub">Microlearning Bootcamp für Vibe Coding Einsteiger</p>
+    </footer>
+
+    <!-- Background Music -->
+    <audio id="bgMusic" loop>
+        <source src="https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Kevin_MacLeod/Christmas_Instrumentals/Kevin_MacLeod_-_Deck_the_Halls_B.mp3" type="audio/mpeg">
+    </audio>
+    <button class="music-toggle" id="musicToggle" title="Musik an/aus">
+        <span class="music-icon">🔇</span>
+    </button>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

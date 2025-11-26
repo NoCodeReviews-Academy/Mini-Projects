@@ -1,0 +1,2567 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyBound - Cessna 172 Flight Simulator</title>
+
+    <!-- Google Fonts - Aviation inspired typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Cockpit-inspired color palette */
+            --hud-primary: #00ff88;
+            --hud-secondary: #00ccff;
+            --hud-warning: #ffaa00;
+            --hud-danger: #ff3366;
+            --hud-bg: rgba(0, 20, 15, 0.85);
+            --panel-glass: rgba(10, 30, 25, 0.7);
+            --text-glow: 0 0 10px currentColor, 0 0 20px currentColor;
+            --horizon-sky: #1a4a6e;
+            --horizon-ground: #4a3520;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background: #000;
+            font-family: 'Share Tech Mono', monospace;
+            cursor: crosshair;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* Loading Screen */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #0a1510 0%, #1a2a25 50%, #0a1510 100%);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        #loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loading-logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            font-weight: 900;
+            color: var(--hud-primary);
+            text-shadow: var(--text-glow);
+            letter-spacing: 0.3em;
+            margin-bottom: 2rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .loading-subtitle {
+            font-family: 'Exo 2', sans-serif;
+            font-size: 1.2rem;
+            color: var(--hud-secondary);
+            letter-spacing: 0.5em;
+            margin-bottom: 3rem;
+            opacity: 0.8;
+        }
+
+        .loading-bar-container {
+            width: 400px;
+            height: 4px;
+            background: rgba(0, 255, 136, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .loading-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--hud-primary), var(--hud-secondary));
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 20px var(--hud-primary);
+        }
+
+        .loading-status {
+            margin-top: 1.5rem;
+            color: var(--hud-primary);
+            font-size: 0.85rem;
+            opacity: 0.7;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* HUD Overlay */
+        #hud {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* Top Bar - Flight Info */
+        .hud-top {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .flight-data {
+            background: var(--hud-bg);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            padding: 12px 24px;
+            border-radius: 4px;
+            backdrop-filter: blur(10px);
+        }
+
+        .data-label {
+            font-family: 'Exo 2', sans-serif;
+            font-size: 0.65rem;
+            color: var(--hud-secondary);
+            letter-spacing: 0.2em;
+            margin-bottom: 4px;
+        }
+
+        .data-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--hud-primary);
+            text-shadow: var(--text-glow);
+        }
+
+        .data-unit {
+            font-size: 0.7rem;
+            opacity: 0.6;
+            margin-left: 4px;
+        }
+
+        /* Left Panel - Attitude Indicator */
+        .hud-left {
+            position: absolute;
+            left: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .attitude-indicator {
+            width: 180px;
+            height: 180px;
+            background: var(--panel-glass);
+            border: 2px solid rgba(0, 255, 136, 0.4);
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .horizon {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            left: -50%;
+            top: -50%;
+            transition: transform 0.1s ease-out;
+        }
+
+        .horizon-sky {
+            position: absolute;
+            width: 100%;
+            height: 50%;
+            top: 0;
+            background: linear-gradient(180deg, #0a2540 0%, #1a5a8e 100%);
+        }
+
+        .horizon-ground {
+            position: absolute;
+            width: 100%;
+            height: 50%;
+            bottom: 0;
+            background: linear-gradient(180deg, #6a4520 0%, #3a2510 100%);
+        }
+
+        .horizon-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            top: 50%;
+            background: #fff;
+            transform: translateY(-50%);
+        }
+
+        .pitch-markers {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+
+        .pitch-line {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 1px;
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .aircraft-symbol {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 6px;
+            z-index: 10;
+        }
+
+        .aircraft-symbol::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: var(--hud-warning);
+            top: 50%;
+            transform: translateY(-50%);
+            box-shadow: 0 0 10px var(--hud-warning);
+        }
+
+        .aircraft-symbol::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--hud-warning);
+            border-radius: 50%;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .attitude-border {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 3px solid rgba(0, 255, 136, 0.6);
+            pointer-events: none;
+        }
+
+        .bank-indicator {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 10px solid var(--hud-primary);
+        }
+
+        /* Vertical Speed Indicator */
+        .vsi-container {
+            width: 60px;
+            height: 200px;
+            background: var(--panel-glass);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 4px;
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+
+        .vsi-title {
+            position: absolute;
+            top: -20px;
+            left: 0;
+            font-size: 0.6rem;
+            color: var(--hud-secondary);
+            letter-spacing: 0.1em;
+        }
+
+        .vsi-scale {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px 0;
+        }
+
+        .vsi-mark {
+            font-size: 0.6rem;
+            color: var(--hud-primary);
+            text-align: right;
+            padding-right: 8px;
+            opacity: 0.7;
+        }
+
+        .vsi-needle {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--hud-warning);
+            box-shadow: 0 0 10px var(--hud-warning);
+            top: 50%;
+            transition: top 0.2s ease-out;
+        }
+
+        /* Right Panel - Engine & Controls */
+        .hud-right {
+            position: absolute;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .gauge {
+            width: 120px;
+            background: var(--panel-glass);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 4px;
+            padding: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .gauge-title {
+            font-size: 0.6rem;
+            color: var(--hud-secondary);
+            letter-spacing: 0.15em;
+            margin-bottom: 8px;
+        }
+
+        .gauge-bar {
+            height: 6px;
+            background: rgba(0, 255, 136, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+
+        .gauge-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--hud-primary), var(--hud-secondary));
+            transition: width 0.2s ease;
+            box-shadow: 0 0 10px var(--hud-primary);
+        }
+
+        .gauge-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            color: var(--hud-primary);
+            text-shadow: 0 0 5px var(--hud-primary);
+        }
+
+        /* Bottom Panel - Controls Info */
+        .hud-bottom {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            background: var(--hud-bg);
+            padding: 15px 30px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .control-hint {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .key {
+            background: rgba(0, 255, 136, 0.15);
+            border: 1px solid rgba(0, 255, 136, 0.4);
+            padding: 4px 10px;
+            border-radius: 3px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            color: var(--hud-primary);
+        }
+
+        .control-desc {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Compass */
+        .compass {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 40px;
+            background: var(--hud-bg);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .compass-tape {
+            position: absolute;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            transition: transform 0.1s ease-out;
+            white-space: nowrap;
+        }
+
+        .compass-mark {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            width: 30px;
+            flex-shrink: 0;
+        }
+
+        .compass-tick {
+            width: 1px;
+            height: 10px;
+            background: var(--hud-primary);
+            opacity: 0.5;
+        }
+
+        .compass-tick.major {
+            height: 15px;
+            opacity: 1;
+        }
+
+        .compass-label {
+            font-size: 0.7rem;
+            color: var(--hud-primary);
+            margin-top: 4px;
+        }
+
+        .compass-pointer {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 12px solid var(--hud-warning);
+        }
+
+        /* Minimap */
+        .minimap {
+            position: absolute;
+            bottom: 80px;
+            right: 30px;
+            width: 150px;
+            height: 150px;
+            background: var(--panel-glass);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 4px;
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .minimap-title {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            font-size: 0.6rem;
+            color: var(--hud-secondary);
+            letter-spacing: 0.1em;
+            z-index: 2;
+        }
+
+        .minimap-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Stall Warning */
+        .stall-warning {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 51, 102, 0.9);
+            color: white;
+            padding: 20px 40px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            border-radius: 4px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s;
+            animation: blink 0.5s infinite;
+        }
+
+        .stall-warning.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Camera Mode Indicator */
+        .camera-mode {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            background: var(--hud-bg);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            padding: 10px 20px;
+            border-radius: 4px;
+            backdrop-filter: blur(10px);
+        }
+
+        .camera-label {
+            font-size: 0.6rem;
+            color: var(--hud-secondary);
+            letter-spacing: 0.15em;
+            margin-bottom: 4px;
+        }
+
+        .camera-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            color: var(--hud-primary);
+        }
+
+        /* Flaps Indicator */
+        .flaps-indicator {
+            position: absolute;
+            bottom: 80px;
+            left: 30px;
+            background: var(--panel-glass);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            padding: 12px 16px;
+            border-radius: 4px;
+            backdrop-filter: blur(10px);
+        }
+
+        .flaps-title {
+            font-size: 0.6rem;
+            color: var(--hud-secondary);
+            letter-spacing: 0.15em;
+            margin-bottom: 8px;
+        }
+
+        .flaps-positions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .flap-pos {
+            width: 20px;
+            height: 20px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            color: var(--hud-primary);
+            opacity: 0.4;
+        }
+
+        .flap-pos.active {
+            background: rgba(0, 255, 136, 0.3);
+            opacity: 1;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        /* Gear Indicator */
+        .gear-indicator {
+            margin-top: 10px;
+        }
+
+        .gear-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .gear-light {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--hud-danger);
+            transition: background 0.3s;
+        }
+
+        .gear-light.down {
+            background: var(--hud-primary);
+            box-shadow: 0 0 10px var(--hud-primary);
+        }
+
+        .gear-text {
+            font-size: 0.7rem;
+            color: var(--hud-primary);
+        }
+
+        /* Scanline effect */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 200;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.1) 0px,
+                rgba(0, 0, 0, 0.1) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+            opacity: 0.3;
+        }
+
+        /* Vignette */
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 150;
+            background: radial-gradient(
+                ellipse at center,
+                transparent 0%,
+                transparent 60%,
+                rgba(0, 0, 0, 0.4) 100%
+            );
+        }
+
+        /* Sound Control */
+        .sound-control {
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            background: var(--hud-bg);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            padding: 10px 16px;
+            border-radius: 4px;
+            backdrop-filter: blur(10px);
+            pointer-events: auto;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .sound-control:hover {
+            border-color: rgba(0, 255, 136, 0.6);
+            background: rgba(0, 40, 30, 0.9);
+        }
+
+        .sound-control .sound-icon {
+            font-size: 1.2rem;
+            margin-right: 8px;
+        }
+
+        .sound-control .sound-text {
+            font-size: 0.7rem;
+            color: var(--hud-primary);
+            letter-spacing: 0.1em;
+        }
+
+        .sound-control.muted .sound-icon {
+            opacity: 0.4;
+        }
+
+        .sound-control.muted .sound-text {
+            opacity: 0.4;
+        }
+
+        /* Volume Slider */
+        .volume-container {
+            position: absolute;
+            top: 70px;
+            left: 30px;
+            background: var(--hud-bg);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            padding: 10px 16px;
+            border-radius: 4px;
+            backdrop-filter: blur(10px);
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .volume-label {
+            font-size: 0.6rem;
+            color: var(--hud-secondary);
+            letter-spacing: 0.1em;
+        }
+
+        .volume-slider {
+            width: 80px;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(0, 255, 136, 0.2);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: var(--hud-primary);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--hud-primary);
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            background: var(--hud-primary);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px var(--hud-primary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-logo">SKYBOUND</div>
+        <div class="loading-subtitle">CESSNA 172 SKYHAWK</div>
+        <div class="loading-bar-container">
+            <div class="loading-bar" id="loading-bar"></div>
+        </div>
+        <div class="loading-status" id="loading-status">Initializing flight systems...</div>
+    </div>
+
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- HUD Overlay -->
+    <div id="hud">
+        <!-- Top Flight Data -->
+        <div class="hud-top">
+            <div class="flight-data">
+                <div class="data-label">AIRSPEED</div>
+                <div class="data-value"><span id="airspeed">0</span><span class="data-unit">KTS</span></div>
+            </div>
+            <div class="flight-data">
+                <div class="data-label">ALTITUDE</div>
+                <div class="data-value"><span id="altitude">0</span><span class="data-unit">FT</span></div>
+            </div>
+            <div class="flight-data">
+                <div class="data-label">HEADING</div>
+                <div class="data-value"><span id="heading">000</span><span class="data-unit">°</span></div>
+            </div>
+        </div>
+
+        <!-- Compass -->
+        <div class="compass">
+            <div class="compass-tape" id="compass-tape"></div>
+            <div class="compass-pointer"></div>
+        </div>
+
+        <!-- Camera Mode -->
+        <div class="camera-mode">
+            <div class="camera-label">CAMERA</div>
+            <div class="camera-value" id="camera-mode">CHASE</div>
+        </div>
+
+        <!-- Left Panel -->
+        <div class="hud-left">
+            <div class="attitude-indicator">
+                <div class="horizon" id="horizon">
+                    <div class="horizon-sky"></div>
+                    <div class="horizon-ground"></div>
+                    <div class="horizon-line"></div>
+                </div>
+                <div class="aircraft-symbol"></div>
+                <div class="attitude-border"></div>
+                <div class="bank-indicator" id="bank-indicator"></div>
+            </div>
+
+            <div class="vsi-container">
+                <div class="vsi-title">V/S FPM</div>
+                <div class="vsi-scale">
+                    <div class="vsi-mark">+2000</div>
+                    <div class="vsi-mark">+1000</div>
+                    <div class="vsi-mark">0</div>
+                    <div class="vsi-mark">-1000</div>
+                    <div class="vsi-mark">-2000</div>
+                </div>
+                <div class="vsi-needle" id="vsi-needle"></div>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="hud-right">
+            <div class="gauge">
+                <div class="gauge-title">THROTTLE</div>
+                <div class="gauge-bar">
+                    <div class="gauge-fill" id="throttle-gauge" style="width: 0%"></div>
+                </div>
+                <div class="gauge-value"><span id="throttle-value">0</span>%</div>
+            </div>
+
+            <div class="gauge">
+                <div class="gauge-title">RPM</div>
+                <div class="gauge-bar">
+                    <div class="gauge-fill" id="rpm-gauge" style="width: 0%"></div>
+                </div>
+                <div class="gauge-value"><span id="rpm-value">0</span></div>
+            </div>
+
+            <div class="gauge">
+                <div class="gauge-title">FUEL</div>
+                <div class="gauge-bar">
+                    <div class="gauge-fill" id="fuel-gauge" style="width: 100%"></div>
+                </div>
+                <div class="gauge-value"><span id="fuel-value">100</span>%</div>
+            </div>
+        </div>
+
+        <!-- Flaps & Gear -->
+        <div class="flaps-indicator">
+            <div class="flaps-title">FLAPS</div>
+            <div class="flaps-positions">
+                <div class="flap-pos active" data-pos="0">0</div>
+                <div class="flap-pos" data-pos="10">10</div>
+                <div class="flap-pos" data-pos="20">20</div>
+                <div class="flap-pos" data-pos="30">30</div>
+            </div>
+            <div class="gear-indicator">
+                <div class="flaps-title" style="margin-top: 10px;">GEAR</div>
+                <div class="gear-status">
+                    <div class="gear-light down" id="gear-light"></div>
+                    <div class="gear-text" id="gear-text">DOWN</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Minimap -->
+        <div class="minimap">
+            <div class="minimap-title">MAP</div>
+            <canvas class="minimap-canvas" id="minimap-canvas"></canvas>
+        </div>
+
+        <!-- Bottom Controls -->
+        <div class="hud-bottom">
+            <div class="control-hint">
+                <span class="key">W/S</span>
+                <span class="control-desc">Pitch</span>
+            </div>
+            <div class="control-hint">
+                <span class="key">A/D</span>
+                <span class="control-desc">Roll</span>
+            </div>
+            <div class="control-hint">
+                <span class="key">Q/E</span>
+                <span class="control-desc">Rudder</span>
+            </div>
+            <div class="control-hint">
+                <span class="key">↑/↓</span>
+                <span class="control-desc">Throttle</span>
+            </div>
+            <div class="control-hint">
+                <span class="key">F</span>
+                <span class="control-desc">Flaps</span>
+            </div>
+            <div class="control-hint">
+                <span class="key">G</span>
+                <span class="control-desc">Gear</span>
+            </div>
+            <div class="control-hint">
+                <span class="key">C</span>
+                <span class="control-desc">Camera</span>
+            </div>
+            <div class="control-hint">
+                <span class="key">R</span>
+                <span class="control-desc">Reset</span>
+            </div>
+        </div>
+
+        <!-- Stall Warning -->
+        <div class="stall-warning" id="stall-warning">⚠ STALL WARNING ⚠</div>
+
+        <!-- Sound Controls -->
+        <div class="sound-control" id="sound-toggle">
+            <span class="sound-icon">🔊</span>
+            <span class="sound-text">SOUND ON</span>
+        </div>
+        <div class="volume-container">
+            <span class="volume-label">VOL</span>
+            <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="50">
+        </div>
+    </div>
+
+    <!-- Visual Effects -->
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+
+    <!-- Three.js and Flight Simulator -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // ==========================================
+        // AUDIO ENGINE - Procedural Flight Sounds
+        // ==========================================
+
+        class AudioEngine {
+            constructor() {
+                this.audioContext = null;
+                this.masterGain = null;
+                this.isInitialized = false;
+                this.isMuted = false;
+                this.volume = 0.5;
+
+                // Sound nodes
+                this.engineOscillators = [];
+                this.engineGain = null;
+                this.windNoise = null;
+                this.windGain = null;
+                this.stallHorn = null;
+                this.stallGain = null;
+
+                // One-shot sounds
+                this.gearSound = null;
+                this.flapSound = null;
+            }
+
+            async init() {
+                if (this.isInitialized) return;
+
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+                    // Master gain
+                    this.masterGain = this.audioContext.createGain();
+                    this.masterGain.gain.value = this.volume;
+                    this.masterGain.connect(this.audioContext.destination);
+
+                    // Initialize all sound generators
+                    this.createEngineSound();
+                    this.createWindSound();
+                    this.createStallHorn();
+
+                    this.isInitialized = true;
+                    console.log('Audio engine initialized');
+                } catch (e) {
+                    console.error('Audio initialization failed:', e);
+                }
+            }
+
+            createEngineSound() {
+                // Engine sound using multiple oscillators for rich timbre
+                // Simulating a Lycoming O-360 4-cylinder engine
+
+                this.engineGain = this.audioContext.createGain();
+                this.engineGain.gain.value = 0;
+
+                // Create a dynamics compressor for better sound
+                const compressor = this.audioContext.createDynamicsCompressor();
+                compressor.threshold.value = -20;
+                compressor.knee.value = 10;
+                compressor.ratio.value = 4;
+                compressor.attack.value = 0.005;
+                compressor.release.value = 0.1;
+
+                // Low-pass filter to smooth the sound
+                const engineFilter = this.audioContext.createBiquadFilter();
+                engineFilter.type = 'lowpass';
+                engineFilter.frequency.value = 800;
+                engineFilter.Q.value = 1;
+
+                // Base frequency oscillators (fundamental + harmonics)
+                const frequencies = [
+                    { freq: 1, gain: 0.4, type: 'sawtooth' },    // Fundamental
+                    { freq: 2, gain: 0.25, type: 'square' },    // 2nd harmonic
+                    { freq: 3, gain: 0.15, type: 'sawtooth' },  // 3rd harmonic
+                    { freq: 4, gain: 0.1, type: 'triangle' },   // 4th harmonic
+                    { freq: 0.5, gain: 0.3, type: 'sine' },     // Sub-bass rumble
+                ];
+
+                frequencies.forEach(f => {
+                    const osc = this.audioContext.createOscillator();
+                    const oscGain = this.audioContext.createGain();
+
+                    osc.type = f.type;
+                    osc.frequency.value = 30 * f.freq; // Base ~30Hz at idle
+                    oscGain.gain.value = f.gain;
+
+                    osc.connect(oscGain);
+                    oscGain.connect(engineFilter);
+                    osc.start();
+
+                    this.engineOscillators.push({ osc, gain: oscGain, freqMult: f.freq });
+                });
+
+                // Add noise for engine roughness
+                const noiseBuffer = this.createNoiseBuffer(2);
+                const noiseSource = this.audioContext.createBufferSource();
+                noiseSource.buffer = noiseBuffer;
+                noiseSource.loop = true;
+
+                const noiseGain = this.audioContext.createGain();
+                noiseGain.gain.value = 0.03;
+
+                const noiseFilter = this.audioContext.createBiquadFilter();
+                noiseFilter.type = 'bandpass';
+                noiseFilter.frequency.value = 200;
+                noiseFilter.Q.value = 2;
+
+                noiseSource.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(engineFilter);
+                noiseSource.start();
+
+                this.engineNoiseGain = noiseGain;
+
+                engineFilter.connect(compressor);
+                compressor.connect(this.engineGain);
+                this.engineGain.connect(this.masterGain);
+            }
+
+            createWindSound() {
+                // Wind noise using filtered white noise
+                this.windGain = this.audioContext.createGain();
+                this.windGain.gain.value = 0;
+
+                const noiseBuffer = this.createNoiseBuffer(4);
+                this.windNoise = this.audioContext.createBufferSource();
+                this.windNoise.buffer = noiseBuffer;
+                this.windNoise.loop = true;
+
+                // Multiple bandpass filters for realistic wind
+                const lowWindFilter = this.audioContext.createBiquadFilter();
+                lowWindFilter.type = 'bandpass';
+                lowWindFilter.frequency.value = 150;
+                lowWindFilter.Q.value = 0.5;
+
+                const midWindFilter = this.audioContext.createBiquadFilter();
+                midWindFilter.type = 'bandpass';
+                midWindFilter.frequency.value = 400;
+                midWindFilter.Q.value = 0.7;
+
+                const highWindFilter = this.audioContext.createBiquadFilter();
+                highWindFilter.type = 'highpass';
+                highWindFilter.frequency.value = 2000;
+
+                // Mix the filtered noise
+                const lowGain = this.audioContext.createGain();
+                lowGain.gain.value = 0.6;
+                const midGain = this.audioContext.createGain();
+                midGain.gain.value = 0.3;
+                const highGain = this.audioContext.createGain();
+                highGain.gain.value = 0.15;
+
+                this.windNoise.connect(lowWindFilter);
+                this.windNoise.connect(midWindFilter);
+                this.windNoise.connect(highWindFilter);
+
+                lowWindFilter.connect(lowGain);
+                midWindFilter.connect(midGain);
+                highWindFilter.connect(highGain);
+
+                lowGain.connect(this.windGain);
+                midGain.connect(this.windGain);
+                highGain.connect(this.windGain);
+
+                this.windGain.connect(this.masterGain);
+                this.windNoise.start();
+
+                // Store filters for dynamic modulation
+                this.windFilters = { low: lowWindFilter, mid: midWindFilter, high: highWindFilter };
+            }
+
+            createStallHorn() {
+                // Classic stall warning horn - pulsing tone
+                this.stallGain = this.audioContext.createGain();
+                this.stallGain.gain.value = 0;
+
+                // Two-tone horn sound
+                const osc1 = this.audioContext.createOscillator();
+                osc1.type = 'square';
+                osc1.frequency.value = 400;
+
+                const osc2 = this.audioContext.createOscillator();
+                osc2.type = 'square';
+                osc2.frequency.value = 500;
+
+                const hornGain1 = this.audioContext.createGain();
+                const hornGain2 = this.audioContext.createGain();
+                hornGain1.gain.value = 0.3;
+                hornGain2.gain.value = 0.2;
+
+                // Add slight detuning LFO for urgency
+                const lfo = this.audioContext.createOscillator();
+                lfo.type = 'sine';
+                lfo.frequency.value = 8; // Pulse rate
+                const lfoGain = this.audioContext.createGain();
+                lfoGain.gain.value = 20;
+
+                lfo.connect(lfoGain);
+                lfoGain.connect(osc1.frequency);
+
+                osc1.connect(hornGain1);
+                osc2.connect(hornGain2);
+                hornGain1.connect(this.stallGain);
+                hornGain2.connect(this.stallGain);
+
+                this.stallGain.connect(this.masterGain);
+
+                osc1.start();
+                osc2.start();
+                lfo.start();
+
+                this.stallHorn = { osc1, osc2, lfo };
+            }
+
+            createNoiseBuffer(duration) {
+                const bufferSize = this.audioContext.sampleRate * duration;
+                const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+
+                // Pink-ish noise (more natural sounding)
+                let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+                for (let i = 0; i < bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    b0 = 0.99886 * b0 + white * 0.0555179;
+                    b1 = 0.99332 * b1 + white * 0.0750759;
+                    b2 = 0.96900 * b2 + white * 0.1538520;
+                    b3 = 0.86650 * b3 + white * 0.3104856;
+                    b4 = 0.55000 * b4 + white * 0.5329522;
+                    b5 = -0.7616 * b5 - white * 0.0168980;
+                    data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+                    b6 = white * 0.115926;
+                }
+
+                return buffer;
+            }
+
+            playGearSound() {
+                if (!this.isInitialized || this.isMuted) return;
+
+                // Mechanical gear sound - servo motor + click
+                const osc = this.audioContext.createOscillator();
+                osc.type = 'sawtooth';
+                osc.frequency.value = 80;
+
+                const gain = this.audioContext.createGain();
+                gain.gain.value = 0;
+
+                const filter = this.audioContext.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 300;
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterGain);
+
+                const now = this.audioContext.currentTime;
+
+                // Servo motor sound
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.15, now + 0.05);
+                gain.gain.linearRampToValueAtTime(0.1, now + 0.3);
+                gain.gain.linearRampToValueAtTime(0.15, now + 0.6);
+                gain.gain.linearRampToValueAtTime(0, now + 0.8);
+
+                osc.frequency.setValueAtTime(80, now);
+                osc.frequency.linearRampToValueAtTime(120, now + 0.3);
+                osc.frequency.linearRampToValueAtTime(60, now + 0.6);
+
+                osc.start(now);
+                osc.stop(now + 0.8);
+
+                // Click/clunk at the end
+                setTimeout(() => this.playClick(0.2), 700);
+            }
+
+            playFlapSound() {
+                if (!this.isInitialized || this.isMuted) return;
+
+                // Flap motor whine + aerodynamic whoosh
+                const osc = this.audioContext.createOscillator();
+                osc.type = 'sawtooth';
+                osc.frequency.value = 200;
+
+                const gain = this.audioContext.createGain();
+
+                const filter = this.audioContext.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 400;
+                filter.Q.value = 2;
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterGain);
+
+                const now = this.audioContext.currentTime;
+
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.08, now + 0.05);
+                gain.gain.linearRampToValueAtTime(0.05, now + 0.3);
+                gain.gain.linearRampToValueAtTime(0, now + 0.5);
+
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.linearRampToValueAtTime(350, now + 0.15);
+                osc.frequency.linearRampToValueAtTime(150, now + 0.5);
+
+                osc.start(now);
+                osc.stop(now + 0.5);
+
+                // Aerodynamic whoosh
+                this.playWhoosh();
+            }
+
+            playWhoosh() {
+                const buffer = this.createNoiseBuffer(0.5);
+                const source = this.audioContext.createBufferSource();
+                source.buffer = buffer;
+
+                const gain = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 600;
+                filter.Q.value = 1;
+
+                source.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterGain);
+
+                const now = this.audioContext.currentTime;
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.1, now + 0.1);
+                gain.gain.linearRampToValueAtTime(0, now + 0.4);
+
+                filter.frequency.setValueAtTime(400, now);
+                filter.frequency.linearRampToValueAtTime(800, now + 0.2);
+                filter.frequency.linearRampToValueAtTime(300, now + 0.4);
+
+                source.start(now);
+                source.stop(now + 0.5);
+            }
+
+            playClick(volume = 0.1) {
+                if (!this.isInitialized || this.isMuted) return;
+
+                const osc = this.audioContext.createOscillator();
+                osc.type = 'square';
+                osc.frequency.value = 1000;
+
+                const gain = this.audioContext.createGain();
+                gain.gain.value = 0;
+
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+
+                const now = this.audioContext.currentTime;
+                gain.gain.setValueAtTime(volume, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+                osc.start(now);
+                osc.stop(now + 0.05);
+            }
+
+            playTouchdown() {
+                if (!this.isInitialized || this.isMuted) return;
+
+                // Tire screech + thump
+                const buffer = this.createNoiseBuffer(0.3);
+                const source = this.audioContext.createBufferSource();
+                source.buffer = buffer;
+
+                const gain = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 2000;
+                filter.Q.value = 3;
+
+                source.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterGain);
+
+                const now = this.audioContext.currentTime;
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+                source.start(now);
+                source.stop(now + 0.3);
+
+                // Low thump
+                const thump = this.audioContext.createOscillator();
+                thump.type = 'sine';
+                thump.frequency.value = 60;
+
+                const thumpGain = this.audioContext.createGain();
+                thump.connect(thumpGain);
+                thumpGain.connect(this.masterGain);
+
+                thumpGain.gain.setValueAtTime(0.4, now);
+                thumpGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+                thump.start(now);
+                thump.stop(now + 0.15);
+            }
+
+            update(flightState) {
+                if (!this.isInitialized || this.isMuted) return;
+
+                const { rpm, airspeed, throttle, isStalling, onGround } = flightState;
+
+                // ================
+                // ENGINE SOUND
+                // ================
+                // Map RPM to frequency (idle ~700 RPM, max ~2700 RPM)
+                const rpmNormalized = (rpm - 700) / 2000;
+                const baseFreq = 25 + rpmNormalized * 45; // 25Hz idle to 70Hz full power
+
+                this.engineOscillators.forEach(({ osc, freqMult }) => {
+                    osc.frequency.setTargetAtTime(baseFreq * freqMult, this.audioContext.currentTime, 0.1);
+                });
+
+                // Engine volume based on throttle
+                const engineVolume = 0.15 + throttle * 0.35;
+                this.engineGain.gain.setTargetAtTime(engineVolume, this.audioContext.currentTime, 0.1);
+
+                // Engine noise increases with RPM
+                if (this.engineNoiseGain) {
+                    this.engineNoiseGain.gain.setTargetAtTime(0.02 + rpmNormalized * 0.04, this.audioContext.currentTime, 0.1);
+                }
+
+                // ================
+                // WIND SOUND
+                // ================
+                // Wind volume based on airspeed (starts around 30 knots)
+                const windIntensity = Math.max(0, (airspeed - 30) / 150);
+                const windVolume = Math.min(windIntensity * 0.4, 0.4);
+                this.windGain.gain.setTargetAtTime(windVolume, this.audioContext.currentTime, 0.2);
+
+                // Wind frequency shifts with speed
+                if (this.windFilters) {
+                    const speedFactor = Math.min(airspeed / 150, 1);
+                    this.windFilters.low.frequency.setTargetAtTime(100 + speedFactor * 200, this.audioContext.currentTime, 0.3);
+                    this.windFilters.mid.frequency.setTargetAtTime(300 + speedFactor * 400, this.audioContext.currentTime, 0.3);
+                    this.windFilters.high.frequency.setTargetAtTime(1500 + speedFactor * 2000, this.audioContext.currentTime, 0.3);
+                }
+
+                // ================
+                // STALL HORN
+                // ================
+                const stallVolume = isStalling ? 0.25 : 0;
+                this.stallGain.gain.setTargetAtTime(stallVolume, this.audioContext.currentTime, 0.05);
+            }
+
+            setVolume(value) {
+                this.volume = value;
+                if (this.masterGain) {
+                    this.masterGain.gain.setTargetAtTime(value, this.audioContext.currentTime, 0.1);
+                }
+            }
+
+            setMuted(muted) {
+                this.isMuted = muted;
+                if (this.masterGain) {
+                    this.masterGain.gain.setTargetAtTime(muted ? 0 : this.volume, this.audioContext.currentTime, 0.1);
+                }
+            }
+
+            resume() {
+                if (this.audioContext && this.audioContext.state === 'suspended') {
+                    this.audioContext.resume();
+                }
+            }
+        }
+
+        // ==========================================
+        // ARCADE FLIGHT PHYSICS ENGINE
+        // Fun and responsive - not realistic!
+        // ==========================================
+
+        class FlightPhysics {
+            constructor() {
+                // Arcade flight settings
+                this.specs = {
+                    // Thrust & Speed
+                    maxSpeed: 80,            // m/s (~155 knots)
+                    minSpeed: 15,            // m/s (~30 knots) - stall below this
+                    acceleration: 25,        // m/s² throttle response
+                    drag: 0.5,               // Air resistance factor
+
+                    // Rotation speeds (radians per second at full input)
+                    pitchRate: 1.8,          // How fast we pitch
+                    rollRate: 2.5,           // How fast we roll
+                    yawRate: 1.2,            // How fast we yaw
+
+                    // Stability - how fast plane returns to level
+                    pitchStability: 0.3,
+                    rollStability: 0.5,
+
+                    // Lift
+                    liftFactor: 12,          // How much lift per speed
+                    gravity: 15,             // Gravity strength (arcade - less than real)
+
+                    // Stall
+                    stallAngle: 25,          // degrees - more forgiving
+                    stallSpeed: 25,          // m/s
+                };
+
+                // Current state
+                this.state = {
+                    position: new THREE.Vector3(0, 300, 0),
+                    velocity: new THREE.Vector3(0, 0, 60),   // Start flying forward
+                    rotation: new THREE.Euler(0, 0, 0, 'YXZ'),
+                    angularVelocity: new THREE.Vector3(0, 0, 0),
+
+                    // Control inputs (-1 to 1)
+                    elevator: 0,
+                    aileron: 0,
+                    rudder: 0,
+                    throttle: 0.7,
+                    flaps: 0,
+                    gear: true,
+
+                    // Engine
+                    rpm: 2000,
+                    fuel: 100,
+
+                    // Derived values
+                    airspeed: 0,
+                    altitude: 0,
+                    heading: 0,
+                    pitch: 0,
+                    roll: 0,
+                    verticalSpeed: 0,
+                    angleOfAttack: 0,
+                    isStalling: false,
+                    onGround: false,
+                };
+
+                // Temporary vectors
+                this._tempQuat = new THREE.Quaternion();
+                this._forward = new THREE.Vector3();
+                this._right = new THREE.Vector3();
+                this._up = new THREE.Vector3();
+            }
+
+            getOrientationVectors() {
+                this._tempQuat.setFromEuler(this.state.rotation);
+                this._forward.set(0, 0, 1).applyQuaternion(this._tempQuat);
+                this._right.set(1, 0, 0).applyQuaternion(this._tempQuat);
+                this._up.set(0, 1, 0).applyQuaternion(this._tempQuat);
+                return { forward: this._forward, right: this._right, up: this._up };
+            }
+
+            update(dt) {
+                const { state, specs } = this;
+                dt = Math.min(dt, 0.05);
+
+                const { forward, right, up } = this.getOrientationVectors();
+
+                // ==========================================
+                // ARCADE ROTATION - Direct and responsive!
+                // ==========================================
+
+                // Direct rotation from controls (instant response)
+                state.rotation.x += state.elevator * specs.pitchRate * dt;
+                state.rotation.z += state.aileron * specs.rollRate * dt;
+                state.rotation.y += state.rudder * specs.yawRate * dt;
+
+                // Roll also causes yaw (coordinated turn)
+                state.rotation.y += state.rotation.z * 0.8 * dt;
+
+                // Slight auto-leveling when no input (optional stability)
+                if (Math.abs(state.elevator) < 0.1) {
+                    state.rotation.x *= (1 - specs.pitchStability * dt);
+                }
+                if (Math.abs(state.aileron) < 0.1) {
+                    state.rotation.z *= (1 - specs.rollStability * dt);
+                }
+
+                // Clamp rotation
+                state.rotation.x = THREE.MathUtils.clamp(state.rotation.x, -Math.PI / 2.2, Math.PI / 2.2);
+                state.rotation.z = THREE.MathUtils.clamp(state.rotation.z, -Math.PI / 2.2, Math.PI / 2.2);
+
+                // Normalize yaw
+                while (state.rotation.y > Math.PI) state.rotation.y -= 2 * Math.PI;
+                while (state.rotation.y < -Math.PI) state.rotation.y += 2 * Math.PI;
+
+                // ==========================================
+                // ARCADE MOVEMENT
+                // ==========================================
+
+                // Update orientation vectors after rotation
+                this._tempQuat.setFromEuler(state.rotation);
+                this._forward.set(0, 0, 1).applyQuaternion(this._tempQuat);
+
+                // Current speed
+                const currentSpeed = state.velocity.length();
+
+                // Target speed based on throttle
+                const targetSpeed = specs.minSpeed + state.throttle * (specs.maxSpeed - specs.minSpeed);
+
+                // Accelerate/decelerate towards target
+                let newSpeed = currentSpeed;
+                if (currentSpeed < targetSpeed) {
+                    newSpeed = Math.min(currentSpeed + specs.acceleration * dt, targetSpeed);
+                } else {
+                    newSpeed = Math.max(currentSpeed - specs.drag * dt * 10, targetSpeed * 0.5);
+                }
+
+                // Flaps slow you down but increase lift at low speed
+                if (state.flaps > 0) {
+                    newSpeed *= (1 - state.flaps * 0.002);
+                }
+
+                // Velocity follows aircraft nose direction
+                state.velocity.copy(this._forward).multiplyScalar(newSpeed);
+
+                // Add lift (upward force based on speed and pitch)
+                const speedRatio = currentSpeed / specs.maxSpeed;
+                const liftForce = speedRatio * specs.liftFactor;
+
+                // More lift when pitched up and moving fast
+                const pitchLift = -Math.sin(state.rotation.x) * liftForce * 2;
+                state.velocity.y += pitchLift * dt;
+
+                // Base lift counteracts gravity at cruise speed
+                const baseLift = speedRatio * specs.gravity * 0.9;
+                state.velocity.y += (baseLift - specs.gravity) * dt;
+
+                // Extra lift from flaps at low speed
+                if (state.flaps > 0 && currentSpeed < 40) {
+                    state.velocity.y += state.flaps * 0.05 * dt;
+                }
+
+                // Stall check - too slow = fall!
+                state.isStalling = currentSpeed < specs.stallSpeed && state.position.y > 5;
+                if (state.isStalling) {
+                    state.velocity.y -= specs.gravity * 1.5 * dt;
+                    // Nose drops in stall
+                    state.rotation.x = THREE.MathUtils.lerp(state.rotation.x, 0.3, dt * 2);
+                }
+
+                // Update position
+                state.position.addScaledVector(state.velocity, dt);
+
+                // ==========================================
+                // GROUND HANDLING
+                // ==========================================
+
+                state.onGround = state.position.y <= 2;
+
+                if (state.onGround) {
+                    state.position.y = 2;
+                    if (state.velocity.y < 0) state.velocity.y = 0;
+
+                    // Ground friction
+                    if (currentSpeed < 5) {
+                        state.velocity.multiplyScalar(0.98);
+                    }
+
+                    // Can't pitch down on ground
+                    if (state.rotation.x > 0) {
+                        state.rotation.x *= 0.9;
+                    }
+
+                    // Level out roll on ground
+                    state.rotation.z *= 0.95;
+                }
+
+                // Absolute ground limit
+                if (state.position.y < 1) {
+                    state.position.y = 1;
+                    state.velocity.y = 0;
+                }
+
+                // ==========================================
+                // UPDATE DISPLAY VALUES
+                // ==========================================
+
+                state.airspeed = currentSpeed * 1.944; // m/s to knots
+                state.altitude = state.position.y * 3.281; // m to feet
+                state.heading = ((-state.rotation.y * 180 / Math.PI) + 360) % 360;
+                state.pitch = -state.rotation.x * 180 / Math.PI;
+                state.roll = state.rotation.z * 180 / Math.PI;
+                state.verticalSpeed = state.velocity.y * 196.85; // m/s to ft/min
+
+                // Engine RPM follows throttle
+                const targetRPM = 700 + state.throttle * 2000;
+                state.rpm += (targetRPM - state.rpm) * dt * 3;
+
+                // Fuel consumption
+                if (state.throttle > 0.1) {
+                    state.fuel -= dt * state.throttle * 0.003;
+                    state.fuel = Math.max(0, state.fuel);
+                }
+
+                return state;
+            }
+
+            reset() {
+                this.state.position.set(0, 300, 0);
+                this.state.velocity.set(0, 0, 60);
+                this.state.rotation.set(0, 0, 0);
+                this.state.angularVelocity.set(0, 0, 0);
+                this.state.elevator = 0;
+                this.state.aileron = 0;
+                this.state.rudder = 0;
+                this.state.throttle = 0.7;
+                this.state.flaps = 0;
+                this.state.gear = true;
+                this.state.fuel = 100;
+                this.state.rpm = 2000;
+            }
+        }
+
+        // ==========================================
+        // MAIN FLIGHT SIMULATOR
+        // ==========================================
+
+        class FlightSimulator {
+            constructor() {
+                this.physics = new FlightPhysics();
+                this.audio = new AudioEngine();
+                this.keys = {};
+                this.cameraMode = 0; // 0: chase, 1: orbit, 2: cockpit, 3: tower
+                this.cameraModes = ['CHASE', 'ORBIT', 'COCKPIT', 'TOWER'];
+                this.wasOnGround = true;
+
+                this.init();
+            }
+
+            async init() {
+                this.updateLoadingStatus('Creating world...', 10);
+
+                // Setup Three.js
+                this.setupRenderer();
+                this.setupScene();
+
+                this.updateLoadingStatus('Loading aircraft...', 30);
+                await this.createAircraft();
+
+                this.updateLoadingStatus('Generating terrain...', 50);
+                this.createTerrain();
+
+                this.updateLoadingStatus('Creating atmosphere...', 70);
+                this.createEnvironment();
+
+                this.updateLoadingStatus('Calibrating instruments...', 85);
+                this.setupControls();
+                this.setupCamera();
+                this.setupMinimap();
+                this.setupCompass();
+                this.setupAudioControls();
+
+                this.updateLoadingStatus('Ready for takeoff!', 100);
+
+                // Hide loading screen
+                setTimeout(() => {
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    this.animate();
+                }, 500);
+            }
+
+            setupAudioControls() {
+                const soundToggle = document.getElementById('sound-toggle');
+                const volumeSlider = document.getElementById('volume-slider');
+
+                // Initialize audio on first user interaction
+                const initAudio = async () => {
+                    await this.audio.init();
+                    document.removeEventListener('click', initAudio);
+                    document.removeEventListener('keydown', initAudio);
+                };
+
+                document.addEventListener('click', initAudio);
+                document.addEventListener('keydown', initAudio);
+
+                // Sound toggle
+                soundToggle.addEventListener('click', async () => {
+                    await this.audio.init();
+                    this.audio.resume();
+
+                    const isMuted = !this.audio.isMuted;
+                    this.audio.setMuted(isMuted);
+
+                    soundToggle.classList.toggle('muted', isMuted);
+                    soundToggle.querySelector('.sound-icon').textContent = isMuted ? '🔇' : '🔊';
+                    soundToggle.querySelector('.sound-text').textContent = isMuted ? 'SOUND OFF' : 'SOUND ON';
+                });
+
+                // Volume slider
+                volumeSlider.addEventListener('input', (e) => {
+                    const volume = e.target.value / 100;
+                    this.audio.setVolume(volume);
+                });
+            }
+
+            updateLoadingStatus(status, progress) {
+                document.getElementById('loading-status').textContent = status;
+                document.getElementById('loading-bar').style.width = progress + '%';
+            }
+
+            setupRenderer() {
+                this.renderer = new THREE.WebGLRenderer({ antialias: true });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                this.renderer.toneMappingExposure = 1.2;
+                document.getElementById('canvas-container').appendChild(this.renderer.domElement);
+
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+            }
+
+            setupScene() {
+                this.scene = new THREE.Scene();
+
+                // Fog for atmosphere
+                this.scene.fog = new THREE.FogExp2(0x88aabb, 0.00008);
+            }
+
+            async createAircraft() {
+                // Create Cessna 172 model
+                this.aircraft = new THREE.Group();
+
+                // Materials
+                const fuselageMaterial = new THREE.MeshStandardMaterial({
+                    color: 0xffffff,
+                    metalness: 0.2,
+                    roughness: 0.3,
+                });
+
+                const accentMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x1a4a8a,
+                    metalness: 0.3,
+                    roughness: 0.4,
+                });
+
+                const windowMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x111122,
+                    metalness: 0.9,
+                    roughness: 0.1,
+                    transparent: true,
+                    opacity: 0.8,
+                });
+
+                const propMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x222222,
+                    metalness: 0.4,
+                    roughness: 0.6,
+                });
+
+                // Fuselage
+                const fuselageGeom = new THREE.CylinderGeometry(0.6, 0.4, 6, 16);
+                fuselageGeom.rotateX(Math.PI / 2);
+                const fuselage = new THREE.Mesh(fuselageGeom, fuselageMaterial);
+                fuselage.castShadow = true;
+                this.aircraft.add(fuselage);
+
+                // Nose cone
+                const noseGeom = new THREE.ConeGeometry(0.6, 1.5, 16);
+                noseGeom.rotateX(-Math.PI / 2);
+                const nose = new THREE.Mesh(noseGeom, fuselageMaterial);
+                nose.position.z = 3.75;
+                nose.castShadow = true;
+                this.aircraft.add(nose);
+
+                // Cockpit windows
+                const cockpitGeom = new THREE.SphereGeometry(0.55, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+                const cockpit = new THREE.Mesh(cockpitGeom, windowMaterial);
+                cockpit.position.set(0, 0.3, 1.5);
+                cockpit.scale.set(1, 0.7, 1.5);
+                this.aircraft.add(cockpit);
+
+                // Wings
+                const wingGeom = new THREE.BoxGeometry(11, 0.12, 1.4);
+                const wings = new THREE.Mesh(wingGeom, fuselageMaterial);
+                wings.position.y = -0.1;
+                wings.castShadow = true;
+                this.aircraft.add(wings);
+
+                // Wing stripes
+                const stripeGeom = new THREE.BoxGeometry(11.1, 0.13, 0.3);
+                const wingStripe = new THREE.Mesh(stripeGeom, accentMaterial);
+                wingStripe.position.set(0, -0.1, 0.4);
+                this.aircraft.add(wingStripe);
+
+                // Wing tips
+                const wingTipGeom = new THREE.SphereGeometry(0.1, 8, 8);
+                const leftWingTip = new THREE.Mesh(wingTipGeom, accentMaterial);
+                leftWingTip.position.set(-5.5, -0.1, 0);
+                leftWingTip.scale.set(1, 0.5, 3);
+                this.aircraft.add(leftWingTip);
+
+                const rightWingTip = leftWingTip.clone();
+                rightWingTip.position.x = 5.5;
+                this.aircraft.add(rightWingTip);
+
+                // Horizontal stabilizer
+                const hStabGeom = new THREE.BoxGeometry(3.5, 0.08, 0.8);
+                const hStab = new THREE.Mesh(hStabGeom, fuselageMaterial);
+                hStab.position.set(0, 0.3, -2.8);
+                hStab.castShadow = true;
+                this.aircraft.add(hStab);
+
+                // Elevators
+                const elevatorGeom = new THREE.BoxGeometry(3.5, 0.06, 0.4);
+                this.elevatorMesh = new THREE.Mesh(elevatorGeom, fuselageMaterial);
+                this.elevatorMesh.position.set(0, 0.3, -3.2);
+                this.aircraft.add(this.elevatorMesh);
+
+                // Vertical stabilizer
+                const vStabGeom = new THREE.BoxGeometry(0.08, 1.5, 1.2);
+                const vStab = new THREE.Mesh(vStabGeom, fuselageMaterial);
+                vStab.position.set(0, 1, -2.5);
+                vStab.castShadow = true;
+                this.aircraft.add(vStab);
+
+                // Rudder
+                const rudderGeom = new THREE.BoxGeometry(0.06, 1.4, 0.6);
+                this.rudderMesh = new THREE.Mesh(rudderGeom, fuselageMaterial);
+                this.rudderMesh.position.set(0, 1, -3.0);
+                this.aircraft.add(this.rudderMesh);
+
+                // Tail stripe
+                const tailStripeGeom = new THREE.BoxGeometry(0.09, 1.5, 0.3);
+                const tailStripe = new THREE.Mesh(tailStripeGeom, accentMaterial);
+                tailStripe.position.set(0, 1, -2.3);
+                this.aircraft.add(tailStripe);
+
+                // Engine cowling
+                const cowlingGeom = new THREE.CylinderGeometry(0.55, 0.6, 0.8, 16);
+                cowlingGeom.rotateX(Math.PI / 2);
+                const cowling = new THREE.Mesh(cowlingGeom, accentMaterial);
+                cowling.position.z = 3.4;
+                this.aircraft.add(cowling);
+
+                // Propeller hub
+                const hubGeom = new THREE.CylinderGeometry(0.15, 0.15, 0.2, 16);
+                hubGeom.rotateX(Math.PI / 2);
+                const hub = new THREE.Mesh(hubGeom, propMaterial);
+                hub.position.z = 4.5;
+                this.aircraft.add(hub);
+
+                // Propeller blades
+                this.propeller = new THREE.Group();
+                this.propeller.position.z = 4.5;
+
+                const bladeGeom = new THREE.BoxGeometry(0.15, 1.8, 0.03);
+                const blade1 = new THREE.Mesh(bladeGeom, propMaterial);
+                blade1.position.y = 0;
+                this.propeller.add(blade1);
+
+                const blade2 = blade1.clone();
+                blade2.rotation.z = Math.PI / 2;
+                this.propeller.add(blade2);
+
+                this.aircraft.add(this.propeller);
+
+                // Landing gear
+                this.gearGroup = new THREE.Group();
+
+                // Main gear struts
+                const strutGeom = new THREE.CylinderGeometry(0.05, 0.05, 0.8);
+                const leftStrut = new THREE.Mesh(strutGeom, propMaterial);
+                leftStrut.position.set(-1.2, -0.9, 0.3);
+                this.gearGroup.add(leftStrut);
+
+                const rightStrut = leftStrut.clone();
+                rightStrut.position.x = 1.2;
+                this.gearGroup.add(rightStrut);
+
+                // Wheels
+                const wheelGeom = new THREE.CylinderGeometry(0.25, 0.25, 0.15, 16);
+                wheelGeom.rotateZ(Math.PI / 2);
+                const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+
+                const leftWheel = new THREE.Mesh(wheelGeom, wheelMaterial);
+                leftWheel.position.set(-1.2, -1.3, 0.3);
+                leftWheel.castShadow = true;
+                this.gearGroup.add(leftWheel);
+
+                const rightWheel = leftWheel.clone();
+                rightWheel.position.x = 1.2;
+                this.gearGroup.add(rightWheel);
+
+                // Nose gear
+                const noseStrutGeom = new THREE.CylinderGeometry(0.04, 0.04, 0.6);
+                const noseStrut = new THREE.Mesh(noseStrutGeom, propMaterial);
+                noseStrut.position.set(0, -0.8, 2.5);
+                this.gearGroup.add(noseStrut);
+
+                const noseWheel = new THREE.Mesh(wheelGeom, wheelMaterial);
+                noseWheel.position.set(0, -1.1, 2.5);
+                noseWheel.scale.set(0.7, 0.7, 0.7);
+                noseWheel.castShadow = true;
+                this.gearGroup.add(noseWheel);
+
+                this.aircraft.add(this.gearGroup);
+
+                // Ailerons (visual indicators on wings)
+                const aileronGeom = new THREE.BoxGeometry(2, 0.1, 0.3);
+                this.leftAileron = new THREE.Mesh(aileronGeom, fuselageMaterial);
+                this.leftAileron.position.set(-4, -0.1, -0.7);
+                this.aircraft.add(this.leftAileron);
+
+                this.rightAileron = this.leftAileron.clone();
+                this.rightAileron.position.x = 4;
+                this.aircraft.add(this.rightAileron);
+
+                // Flaps
+                const flapGeom = new THREE.BoxGeometry(2.5, 0.08, 0.5);
+                this.leftFlap = new THREE.Mesh(flapGeom, fuselageMaterial);
+                this.leftFlap.position.set(-2, -0.15, -0.75);
+                this.aircraft.add(this.leftFlap);
+
+                this.rightFlap = this.leftFlap.clone();
+                this.rightFlap.position.x = 2;
+                this.aircraft.add(this.rightFlap);
+
+                // Position aircraft
+                this.aircraft.position.copy(this.physics.state.position);
+                this.aircraft.castShadow = true;
+                this.aircraft.receiveShadow = true;
+
+                this.scene.add(this.aircraft);
+            }
+
+            createTerrain() {
+                // Ground plane with texture
+                const groundSize = 50000;
+                const groundGeom = new THREE.PlaneGeometry(groundSize, groundSize, 200, 200);
+                groundGeom.rotateX(-Math.PI / 2);
+
+                // Add terrain height variation
+                const vertices = groundGeom.attributes.position.array;
+                for (let i = 0; i < vertices.length; i += 3) {
+                    const x = vertices[i];
+                    const z = vertices[i + 2];
+                    // Rolling hills
+                    vertices[i + 1] = Math.sin(x * 0.0005) * Math.cos(z * 0.0005) * 50 +
+                                      Math.sin(x * 0.002) * Math.cos(z * 0.002) * 20;
+                }
+                groundGeom.computeVertexNormals();
+
+                // Ground material
+                const groundMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x3d5c3d,
+                    roughness: 0.9,
+                    metalness: 0.0,
+                });
+
+                const ground = new THREE.Mesh(groundGeom, groundMaterial);
+                ground.receiveShadow = true;
+                this.scene.add(ground);
+
+                // Runway
+                const runwayGeom = new THREE.PlaneGeometry(50, 2000);
+                runwayGeom.rotateX(-Math.PI / 2);
+                const runwayMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x333333,
+                    roughness: 0.7,
+                });
+                const runway = new THREE.Mesh(runwayGeom, runwayMaterial);
+                runway.position.set(0, 0.1, 0);
+                runway.receiveShadow = true;
+                this.scene.add(runway);
+
+                // Runway markings
+                const markingGeom = new THREE.PlaneGeometry(3, 30);
+                markingGeom.rotateX(-Math.PI / 2);
+                const markingMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+
+                for (let i = -900; i < 900; i += 50) {
+                    const marking = new THREE.Mesh(markingGeom, markingMaterial);
+                    marking.position.set(0, 0.15, i);
+                    this.scene.add(marking);
+                }
+
+                // Threshold markings
+                const thresholdGeom = new THREE.PlaneGeometry(2, 20);
+                thresholdGeom.rotateX(-Math.PI / 2);
+                for (let x = -20; x <= 20; x += 5) {
+                    const threshold = new THREE.Mesh(thresholdGeom, markingMaterial);
+                    threshold.position.set(x, 0.15, -950);
+                    this.scene.add(threshold);
+
+                    const threshold2 = threshold.clone();
+                    threshold2.position.z = 950;
+                    this.scene.add(threshold2);
+                }
+
+                // Trees (instanced for performance)
+                const treeGeom = new THREE.ConeGeometry(8, 25, 8);
+                const treeMaterial = new THREE.MeshStandardMaterial({ color: 0x2d4a2d });
+
+                const trunkGeom = new THREE.CylinderGeometry(1.5, 2, 8);
+                const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x4a3728 });
+
+                for (let i = 0; i < 500; i++) {
+                    const x = (Math.random() - 0.5) * 10000;
+                    const z = (Math.random() - 0.5) * 10000;
+
+                    // Avoid runway
+                    if (Math.abs(x) < 100 && Math.abs(z) < 1100) continue;
+
+                    const treeGroup = new THREE.Group();
+
+                    const tree = new THREE.Mesh(treeGeom, treeMaterial);
+                    tree.position.y = 16;
+                    tree.castShadow = true;
+                    treeGroup.add(tree);
+
+                    const trunk = new THREE.Mesh(trunkGeom, trunkMaterial);
+                    trunk.position.y = 4;
+                    trunk.castShadow = true;
+                    treeGroup.add(trunk);
+
+                    treeGroup.position.set(x, 0, z);
+                    treeGroup.scale.setScalar(0.8 + Math.random() * 0.4);
+
+                    this.scene.add(treeGroup);
+                }
+
+                // Water body
+                const waterGeom = new THREE.CircleGeometry(500, 64);
+                waterGeom.rotateX(-Math.PI / 2);
+                const waterMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x1a5a8a,
+                    metalness: 0.5,
+                    roughness: 0.2,
+                    transparent: true,
+                    opacity: 0.8,
+                });
+                const water = new THREE.Mesh(waterGeom, waterMaterial);
+                water.position.set(2000, 0.5, -2000);
+                this.scene.add(water);
+            }
+
+            createEnvironment() {
+                // Sky
+                const skyGeom = new THREE.SphereGeometry(20000, 32, 32);
+                const skyMaterial = new THREE.ShaderMaterial({
+                    uniforms: {
+                        topColor: { value: new THREE.Color(0x0066aa) },
+                        bottomColor: { value: new THREE.Color(0x88bbdd) },
+                        offset: { value: 400 },
+                        exponent: { value: 0.6 }
+                    },
+                    vertexShader: `
+                        varying vec3 vWorldPosition;
+                        void main() {
+                            vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                            vWorldPosition = worldPosition.xyz;
+                            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                        }
+                    `,
+                    fragmentShader: `
+                        uniform vec3 topColor;
+                        uniform vec3 bottomColor;
+                        uniform float offset;
+                        uniform float exponent;
+                        varying vec3 vWorldPosition;
+                        void main() {
+                            float h = normalize(vWorldPosition + offset).y;
+                            gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);
+                        }
+                    `,
+                    side: THREE.BackSide
+                });
+                const sky = new THREE.Mesh(skyGeom, skyMaterial);
+                this.scene.add(sky);
+
+                // Sun
+                const sunLight = new THREE.DirectionalLight(0xffffee, 2);
+                sunLight.position.set(5000, 3000, 2000);
+                sunLight.castShadow = true;
+                sunLight.shadow.mapSize.width = 2048;
+                sunLight.shadow.mapSize.height = 2048;
+                sunLight.shadow.camera.near = 10;
+                sunLight.shadow.camera.far = 15000;
+                sunLight.shadow.camera.left = -500;
+                sunLight.shadow.camera.right = 500;
+                sunLight.shadow.camera.top = 500;
+                sunLight.shadow.camera.bottom = -500;
+                this.scene.add(sunLight);
+
+                // Ambient light
+                const ambientLight = new THREE.AmbientLight(0x88aacc, 0.4);
+                this.scene.add(ambientLight);
+
+                // Hemisphere light for sky/ground color bleeding
+                const hemiLight = new THREE.HemisphereLight(0x88bbff, 0x445522, 0.4);
+                this.scene.add(hemiLight);
+
+                // Clouds
+                const cloudGeom = new THREE.SphereGeometry(100, 8, 8);
+                const cloudMaterial = new THREE.MeshStandardMaterial({
+                    color: 0xffffff,
+                    transparent: true,
+                    opacity: 0.8,
+                    roughness: 1,
+                });
+
+                this.clouds = [];
+                for (let i = 0; i < 50; i++) {
+                    const cloudGroup = new THREE.Group();
+
+                    // Create puffy cloud from multiple spheres
+                    for (let j = 0; j < 5; j++) {
+                        const puff = new THREE.Mesh(cloudGeom, cloudMaterial);
+                        puff.position.set(
+                            (Math.random() - 0.5) * 150,
+                            (Math.random() - 0.5) * 40,
+                            (Math.random() - 0.5) * 150
+                        );
+                        puff.scale.setScalar(0.5 + Math.random() * 1);
+                        cloudGroup.add(puff);
+                    }
+
+                    cloudGroup.position.set(
+                        (Math.random() - 0.5) * 20000,
+                        800 + Math.random() * 500,
+                        (Math.random() - 0.5) * 20000
+                    );
+
+                    this.clouds.push(cloudGroup);
+                    this.scene.add(cloudGroup);
+                }
+            }
+
+            setupCamera() {
+                this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.5, 50000);
+                this.cameraOffset = new THREE.Vector3(0, 5, -20);
+                this.cameraTarget = new THREE.Vector3();
+                this.smoothCameraPos = new THREE.Vector3();
+                this.smoothCameraLook = new THREE.Vector3();
+
+                // Tower position for tower view
+                this.towerPosition = new THREE.Vector3(100, 30, -500);
+            }
+
+            setupControls() {
+                // Keyboard controls
+                window.addEventListener('keydown', (e) => {
+                    this.keys[e.code] = true;
+
+                    // Flaps
+                    if (e.code === 'KeyF') {
+                        const flaps = [0, 10, 20, 30];
+                        const currentIndex = flaps.indexOf(this.physics.state.flaps);
+                        const nextIndex = (currentIndex + 1) % flaps.length;
+                        this.physics.state.flaps = flaps[nextIndex];
+                        this.updateFlapsIndicator();
+                        this.audio.playFlapSound();
+                    }
+
+                    // Gear
+                    if (e.code === 'KeyG') {
+                        this.physics.state.gear = !this.physics.state.gear;
+                        this.updateGearIndicator();
+                        this.audio.playGearSound();
+                    }
+
+                    // Camera
+                    if (e.code === 'KeyC') {
+                        this.cameraMode = (this.cameraMode + 1) % this.cameraModes.length;
+                        document.getElementById('camera-mode').textContent = this.cameraModes[this.cameraMode];
+                    }
+
+                    // Reset
+                    if (e.code === 'KeyR') {
+                        this.physics.reset();
+                    }
+                });
+
+                window.addEventListener('keyup', (e) => {
+                    this.keys[e.code] = false;
+                });
+            }
+
+            setupMinimap() {
+                this.minimapCanvas = document.getElementById('minimap-canvas');
+                this.minimapCtx = this.minimapCanvas.getContext('2d');
+                this.minimapCanvas.width = 150;
+                this.minimapCanvas.height = 150;
+            }
+
+            setupCompass() {
+                const compassTape = document.getElementById('compass-tape');
+                let html = '';
+
+                // Create compass marks for 720 degrees (for wrapping)
+                for (let i = 0; i <= 720; i += 10) {
+                    const deg = i % 360;
+                    const isMajor = deg % 30 === 0;
+                    let label = '';
+
+                    if (deg === 0) label = 'N';
+                    else if (deg === 90) label = 'E';
+                    else if (deg === 180) label = 'S';
+                    else if (deg === 270) label = 'W';
+                    else if (isMajor) label = deg.toString();
+
+                    html += `<div class="compass-mark">
+                        <div class="compass-tick ${isMajor ? 'major' : ''}"></div>
+                        ${label ? `<div class="compass-label">${label}</div>` : ''}
+                    </div>`;
+                }
+
+                compassTape.innerHTML = html;
+            }
+
+            updateFlapsIndicator() {
+                const flapPositions = document.querySelectorAll('.flap-pos');
+                flapPositions.forEach(pos => {
+                    const posValue = parseInt(pos.dataset.pos);
+                    pos.classList.toggle('active', posValue === this.physics.state.flaps);
+                });
+            }
+
+            updateGearIndicator() {
+                const gearLight = document.getElementById('gear-light');
+                const gearText = document.getElementById('gear-text');
+
+                if (this.physics.state.gear) {
+                    gearLight.classList.add('down');
+                    gearText.textContent = 'DOWN';
+                } else {
+                    gearLight.classList.remove('down');
+                    gearText.textContent = 'UP';
+                }
+
+                // Show/hide gear model
+                this.gearGroup.visible = this.physics.state.gear;
+            }
+
+            updateControls() {
+                const state = this.physics.state;
+
+                // Much faster control input rate
+                const inputRate = 0.15;      // Was 0.05 - now 3x faster
+                const returnRate = 0.85;     // Controls return to center slightly slower
+
+                // Pitch (W/S) - INVERTED: W = nose down, S = nose up
+                if (this.keys['KeyW']) {
+                    state.elevator = Math.max(state.elevator - inputRate, -1);  // Inverted
+                } else if (this.keys['KeyS']) {
+                    state.elevator = Math.min(state.elevator + inputRate, 1);   // Inverted
+                } else {
+                    state.elevator *= returnRate;
+                }
+
+                // Roll (A/D) - INVERTED: A = roll left, D = roll right
+                if (this.keys['KeyA']) {
+                    state.aileron = Math.max(state.aileron - inputRate, -1);    // Inverted
+                } else if (this.keys['KeyD']) {
+                    state.aileron = Math.min(state.aileron + inputRate, 1);     // Inverted
+                } else {
+                    state.aileron *= returnRate;
+                }
+
+                // Rudder (Q/E)
+                if (this.keys['KeyQ']) {
+                    state.rudder = Math.max(state.rudder - inputRate, -1);
+                } else if (this.keys['KeyE']) {
+                    state.rudder = Math.min(state.rudder + inputRate, 1);
+                } else {
+                    state.rudder *= returnRate;
+                }
+
+                // Throttle (Arrow Up/Down)
+                if (this.keys['ArrowUp']) {
+                    state.throttle = Math.min(state.throttle + 0.02, 1);
+                } else if (this.keys['ArrowDown']) {
+                    state.throttle = Math.max(state.throttle - 0.02, 0);
+                }
+            }
+
+            updateHUD() {
+                const state = this.physics.state;
+
+                // Flight data
+                document.getElementById('airspeed').textContent = Math.round(state.airspeed);
+                document.getElementById('altitude').textContent = Math.round(state.altitude);
+                document.getElementById('heading').textContent = Math.round(state.heading).toString().padStart(3, '0');
+
+                // Gauges
+                document.getElementById('throttle-gauge').style.width = (state.throttle * 100) + '%';
+                document.getElementById('throttle-value').textContent = Math.round(state.throttle * 100);
+
+                document.getElementById('rpm-gauge').style.width = (state.rpm / 2700 * 100) + '%';
+                document.getElementById('rpm-value').textContent = Math.round(state.rpm);
+
+                document.getElementById('fuel-gauge').style.width = state.fuel + '%';
+                document.getElementById('fuel-value').textContent = Math.round(state.fuel);
+
+                // Attitude indicator
+                const horizon = document.getElementById('horizon');
+                const pitchOffset = state.pitch * 2; // pixels per degree
+                const rollAngle = -state.roll;
+                horizon.style.transform = `rotate(${rollAngle}deg) translateY(${pitchOffset}px)`;
+
+                // Bank indicator
+                const bankIndicator = document.getElementById('bank-indicator');
+                bankIndicator.style.transform = `translateX(-50%) rotate(${-state.roll}deg)`;
+
+                // VSI needle
+                const vsiNeedle = document.getElementById('vsi-needle');
+                const vsiOffset = THREE.MathUtils.clamp(state.verticalSpeed / 2000, -1, 1) * 80;
+                vsiNeedle.style.top = (50 - vsiOffset) + '%';
+
+                // Compass
+                const compassTape = document.getElementById('compass-tape');
+                const headingOffset = state.heading * 3; // pixels per degree
+                compassTape.style.transform = `translateX(calc(50% - ${headingOffset}px - 150px))`;
+
+                // Stall warning
+                const stallWarning = document.getElementById('stall-warning');
+                stallWarning.classList.toggle('active', state.isStalling);
+
+                // Update control surface visuals
+                this.elevatorMesh.rotation.x = state.elevator * 0.3;
+                this.rudderMesh.rotation.y = state.rudder * 0.3;
+                this.leftAileron.rotation.x = state.aileron * 0.2;
+                this.rightAileron.rotation.x = -state.aileron * 0.2;
+                this.leftFlap.rotation.x = state.flaps * 0.01;
+                this.rightFlap.rotation.x = state.flaps * 0.01;
+            }
+
+            updateMinimap() {
+                const ctx = this.minimapCtx;
+                const state = this.physics.state;
+                const scale = 0.01;
+
+                ctx.fillStyle = '#0a1a15';
+                ctx.fillRect(0, 0, 150, 150);
+
+                // Draw runway
+                ctx.strokeStyle = '#00ff88';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(75, 75 - 1000 * scale);
+                ctx.lineTo(75, 75 + 1000 * scale);
+                ctx.stroke();
+
+                // Draw aircraft position
+                const aircraftX = 75 + state.position.x * scale;
+                const aircraftZ = 75 - state.position.z * scale;
+
+                ctx.save();
+                ctx.translate(aircraftX, aircraftZ);
+                ctx.rotate(-state.heading * Math.PI / 180);
+
+                // Aircraft triangle
+                ctx.fillStyle = '#ffaa00';
+                ctx.beginPath();
+                ctx.moveTo(0, -8);
+                ctx.lineTo(-5, 6);
+                ctx.lineTo(5, 6);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.restore();
+
+                // Scale indicator
+                ctx.fillStyle = '#00ff88';
+                ctx.font = '8px "Share Tech Mono"';
+                ctx.fillText('1km', 120, 145);
+                ctx.strokeStyle = '#00ff88';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(100, 140);
+                ctx.lineTo(100 + 10, 140);
+                ctx.stroke();
+            }
+
+            updateCamera() {
+                const state = this.physics.state;
+                const dt = 0.016;
+
+                switch (this.cameraMode) {
+                    case 0: // Chase camera
+                        {
+                            // Calculate chase position relative to aircraft
+                            const offset = new THREE.Vector3(0, 8, -25);
+                            offset.applyEuler(state.rotation);
+                            offset.add(state.position);
+
+                            // Smooth camera movement
+                            this.smoothCameraPos.lerp(offset, 0.05);
+                            this.camera.position.copy(this.smoothCameraPos);
+
+                            // Look at aircraft
+                            const lookTarget = state.position.clone();
+                            lookTarget.y += 2;
+                            this.smoothCameraLook.lerp(lookTarget, 0.1);
+                            this.camera.lookAt(this.smoothCameraLook);
+                        }
+                        break;
+
+                    case 1: // Orbit camera
+                        {
+                            const time = performance.now() * 0.0001;
+                            const radius = 30;
+                            const offset = new THREE.Vector3(
+                                Math.sin(time) * radius,
+                                10,
+                                Math.cos(time) * radius
+                            );
+                            offset.add(state.position);
+
+                            this.smoothCameraPos.lerp(offset, 0.03);
+                            this.camera.position.copy(this.smoothCameraPos);
+                            this.camera.lookAt(state.position);
+                        }
+                        break;
+
+                    case 2: // Cockpit camera
+                        {
+                            const cockpitOffset = new THREE.Vector3(0, 0.5, 2);
+                            cockpitOffset.applyEuler(state.rotation);
+                            cockpitOffset.add(state.position);
+
+                            this.camera.position.copy(cockpitOffset);
+
+                            const lookDir = new THREE.Vector3(0, 0, 100);
+                            lookDir.applyEuler(state.rotation);
+                            lookDir.add(cockpitOffset);
+
+                            this.camera.lookAt(lookDir);
+                        }
+                        break;
+
+                    case 3: // Tower camera
+                        {
+                            this.camera.position.copy(this.towerPosition);
+                            this.camera.lookAt(state.position);
+                        }
+                        break;
+                }
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+
+                const dt = 1 / 60;
+
+                // Update controls
+                this.updateControls();
+
+                // Update physics
+                this.physics.update(dt);
+
+                // Update aircraft model
+                const state = this.physics.state;
+                this.aircraft.position.copy(state.position);
+                this.aircraft.rotation.copy(state.rotation);
+
+                // Propeller spin
+                const propSpeed = state.rpm / 2700 * 2;
+                this.propeller.rotation.z += propSpeed;
+
+                // Update camera
+                this.updateCamera();
+
+                // Update HUD
+                this.updateHUD();
+                this.updateMinimap();
+
+                // Update audio
+                this.audio.update(state);
+
+                // Touchdown detection
+                if (state.onGround && !this.wasOnGround) {
+                    this.audio.playTouchdown();
+                }
+                this.wasOnGround = state.onGround;
+
+                // Move clouds slowly
+                this.clouds.forEach(cloud => {
+                    cloud.position.x += 0.5;
+                    if (cloud.position.x > 10000) cloud.position.x = -10000;
+                });
+
+                // Render
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+        // Start simulator
+        new FlightSimulator();
+    </script>
+</body>
+</html>
